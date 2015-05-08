@@ -1,0 +1,62 @@
+﻿@using WorkflowTracking.Core.Globalization;
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewBag.Title - @CommonLib.Web.AppConfig.ApplicationName</title>
+    @Styles.Render("~/Content/css")
+    @Styles.Render("~/Content/kendo/css")
+    @Scripts.Render("~/bundles/modernizr")
+
+
+</head>
+<body>
+    <div class="navbar navbar-inverse navbar-fixed-top">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                @Html.ActionLink(CommonLib.Web.AppConfig.ApplicationName, "Index", "Home", new { area = "" }, new { @class = "navbar-brand" })
+            </div>
+            <div class="navbar-collapse collapse">
+                <ul class="nav navbar-nav">
+                    <li>@Html.ActionLink("Home", "Index", "Home")</li>
+                    <li>@Html.ActionLink(LangResource.About, "About", "Home")</li>
+
+                    @if (CommonLib.Web.SessionHelper.IsAuthenticated()) { 
+                    <li>@Html.ActionLink(LangResource.Product, "Index", "Products")</li>
+                    }
+                </ul>
+                @Html.Partial("_LoginPartial")
+            </div>
+        </div>
+    </div>
+
+
+
+    <div class="container body-content">
+        @RenderBody()
+        <div id="mainsummary" style="display:none"></div>
+        <hr />
+        <footer>
+            <p></p>
+        </footer>
+    </div>
+
+    @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/bundles/bootstrap")
+    @Scripts.Render("~/bundles/main")
+    @Scripts.Render("~/bundles/kendo")
+    @Scripts.Render("~/bundles/lang")
+    <script>
+        function ShowLoading() {
+            $.blockUI({ timeout: 60000, message: '<h1><img src="@CommonLib.Web.AppConfig.UrlBase/Content/Images/ajax-loader.gif" /> </h1>', css: { border: '0px solid Aqua', height: '85px', 'width': '120px', top: '40%', left: '45%' } });
+        }
+    </script>
+    @RenderSection("scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,262 @@
+﻿@using WorkflowTracking.Core.Globalization;
+@{
+    ViewBag.Title = "Product";
+}
+<h2>@ViewBag.Title</h2>
+<h3>@ViewBag.Message</h3>
+
+<p></p>
+@using (Html.BeginForm("", "", FormMethod.Post, new { id = "frm" }))
+        {
+<div>
+    <div style="width:300px; float:left">
+        <h2>Search by ID</h2>
+        <input type="text" id="prodId" size="10" />
+        <input type="button" value="Search" onclick="GetProduct($('#prodId').val());" />
+        <p id="product" />
+    </div>
+
+    <div style="width:300px;float: left">
+        <h2>Search by Name</h2>
+        <input type="text" id="prodName" size="10" />
+        <input type="button" value="Search" onclick="FindProduct($('#prodName').val());" />
+        <p id="product" />
+    </div>
+    <div style="clear: both;"></div>
+    <div>
+        <h2>Create Product</h2>
+        <table class="formcontainer">
+            <tr>
+                <td class="lbl">@LangResource.ProductName</td>
+                <td><input type="text" id="cName" name="cName" size="10" required /></td>
+            </tr>
+            <tr>
+                <td class="lbl">@LangResource.ProductCategory</td>
+                <td><input type="text" id="cCategory" name="cCategory" size="10" required /></td>
+            </tr>
+            <tr>
+                <td class="lbl">@LangResource.ProductPrice</td>
+                <td><input type="text" id="cPrice" name="cPrice" size="10" required /></td>
+            </tr>
+            <tr>
+                <td class="lbl"></td>
+                <td><input type="button" value="@LangResource.Create" onclick="javascript: return CreateProduct();" /></td>
+            </tr>
+        </table>
+      </div>
+
+        <div>
+            <div id="gridItem"></div>
+        </div>
+
+    </div>
+}
+
+ @section scripts{
+    <script>
+    var getProductsUri = '@CommonLib.Web.AppConfig.APIUrlBase/products/getproducts';
+    var getProdurtUri = '@CommonLib.Web.AppConfig.APIUrlBase/products/getproduct';
+    var findProdurtUri = '@CommonLib.Web.AppConfig.APIUrlBase/products/findproduct';
+
+        $(document).ready(function () {
+
+            $("#frm").validate({
+                rules: {
+                    cName: {
+                        required: true,
+                        maxlength: 30
+                    },
+                    cCategory: {
+                        required: true,
+                        maxlength: 30
+                    },
+                    cPrice: {
+                        required: true,
+                        maxlength: 30,
+                        number: true
+                    }
+                },
+                messages: {
+                    cName: {
+                        required: "@LangResource.FieldRequired",
+                        maxlength: "@LangResource.OutOfLength"
+                    },
+                    cCategory: {
+                        required: "@LangResource.FieldRequired",
+                        maxlength: "@LangResource.OutOfLength"
+                    },
+                    cPrice: {
+                        required: "@LangResource.FieldRequired",
+                        maxlength: "@LangResource.OutOfLength"
+                    }
+
+                },
+                submitHandler: function (form) {
+                    console.log("hi");
+                }
+            });
+            GetProducts();
+
+    });//$(document).ready
+
+        function validateCreate() {
+
+        }
+    
+
+    function GetProducts() {
+        SendSearchAjax(getProductsUri);
+    }
+
+    function GetProduct(productid) {
+       // alert(productid);
+        SendSearchAjax(getProdurtUri + '?id=' + productid);
+       // SendSearchAjax(getProdurtUri, { id: productid });
+    }
+
+    function FindProduct(productName) {
+        SendSearchAjax(findProdurtUri + '?name=' + productName);
+        //SendSearchAjax(findProdurtUri, { name: productName });
+    }
+
+
+
+    function SendSearchAjax(uri) {
+        var model = {};
+        $.ajax({
+            url: uri,
+            cache: false,
+            type: "POST",
+            datatype: "json",
+            contentType: 'application/json; charset=utf-8',
+            data: JSON.stringify(model),
+            success: function (result) {
+                if (result.status == appCode.Success) {
+                    var jdata = result.data;
+                    BindGrid(jdata);
+                }
+                else {
+                   var msgContent = getAppCodeText(result.status);
+                   ShowAppMsg($("#mainsummary"), msgContent, true);
+                }
+            },
+            beforeSend: function (request) {
+                request.setRequestHeader("Authorization", "Bearer @CommonLib.Web.SessionHelper.AccessToken");
+            }
+        }); //$Ajax
+
+    }
+
+        function BindGrid(dtSource) {
+            if (dtSource != null) {
+                var dataSourceItem = new kendo.data.DataSource({
+                    data: dtSource,
+                    schema: {
+                        errors: function (response) {
+                            if (response.status != null && response.status != appCode.Success) {
+                                return response;
+                            }
+                            return false;
+                        }
+                    },
+                    error: function (e) {
+                        var objr = e.errors
+                        var msgContent = getAppCodeText(objr.status);
+                        ShowAppMsg($("#mainsummary"), msgContent, true);
+
+                        $('#gridItem').data().kendoGrid.one('dataBinding', function (e) {
+                            e.preventDefault();
+                        })
+
+                    }
+                });
+            }
+
+            $("#gridItem").empty();
+
+            var cols = [
+            {
+                title: "Id",
+                field: "Id",
+                attributes: { style: "text-align:center;white-space:nowrap" }
+            }
+            , {
+                title: "Name",
+                field: "Name",
+                attributes: { style: "text-align:center;white-space:nowrap" }
+            }, {
+                title: "Category",
+                field: "Category",
+                attributes: { style: "text-align:center;white-space:nowrap" }
+            },
+              {
+                  title: "Price",
+                  field: "Price",
+                  template: "#= kendo.toString(Price, 'n2') #",
+                  attributes: { style: "text-align:center;white-space:nowrap" }
+              },
+            {
+                title: "Created At",
+                field: "CreatedAt",
+                template: "#= kendo.toString(kendo.parseDate(CreatedAt), 'yyyy-MM-dd') #",
+                attributes: { style: "text-align:center;white-space:nowrap" }
+            }
+            ];
+
+
+
+            var grid = $("#gridItem").kendoGrid({
+                dataSource: dataSourceItem,
+                pageable: false,
+                filterable: false,
+                emptyMsg: 'NoRecordsFound',
+                sortable: {
+                    allowUnsort: false
+                },
+                scrollable: false,
+                columns: cols
+            });
+
+
+
+            return false;
+        }
+
+        function CreateProduct() {
+            var model = {};
+            var form = $('#frm');
+            if (form.valid()) {
+                var uri = '@CommonLib.Web.AppConfig.APIUrlBase/products/createproduct';
+                var model = {
+                    name: $('#cName').val(),
+                    category: $('#cCategory').val(),
+                    price: $('#cPrice').val(),
+                };
+
+                $.ajax({
+                    url: uri,
+                    cache: false,
+                    type: "POST",
+                    datatype: "json",
+                    contentType: 'application/json; charset=utf-8',
+                    data: JSON.stringify(model),
+                    success: function (result) {
+                        if (result.status == appCode.Success) {
+                            GetProducts();
+                        }
+                        else {
+                            var msgContent = getAppCodeText(result.status);
+                            ShowAppMsg($("#mainsummary"), msgContent, true);
+                        }
+                    },
+                    beforeSend: function (request) {
+                        request.setRequestHeader("Authorization", "Bearer @CommonLib.Web.SessionHelper.AccessToken");
+                    }
+                }); //$Ajax
+            }
+            return false;
+        }
+
+
+    </script>
+}

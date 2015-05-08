@@ -1,0 +1,211 @@
+﻿@using WorkflowTracking.Core.Globalization;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Login";
+}
+
+<div style="width:100%;">
+
+    <div style="width:500px;margin-top:150px;margin-left: auto;margin-right: auto; ">
+
+
+        @using (Html.BeginForm("", "", FormMethod.Post, new { id = "frmLogin" }))
+        {
+
+            <table style="width:350px;height:150px;border:0px solid; padding:10px;" border="0" cellspacing="10">
+                <tr>
+                    <td colspan="3">
+                        <div id="summary-message" style="display:none"></div>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="lbl">@LangResource.UserName</td>
+                    <td>&nbsp;</td>
+                    <td>
+                        <input id="UserName" name="UserName" style="width:200px;" type="text" value="admin" maxlength="20" required />
+                    </td>
+                </tr>
+                <tr><td></td><td></td></tr>
+                <tr>
+                    <td class="lbl">@LangResource.Password</td>
+                    <td>&nbsp;</td>
+                    <td>
+                        <input id="Password" name="Password" style="width:200px;" type="password" value="admin123" maxlength="20" required />
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="text-align:center" colspan="3">
+                        <input id="btnSubmit" name="btnSubmit" type="submit" value="LogOn" style="width:100px" />
+
+                    </td>
+                </tr>
+
+
+            </table>
+
+
+        }
+    </div>
+
+</div>
+
+@section scripts{
+<script type="text/javascript">
+
+
+    $(document).ready(function () {
+
+
+    
+
+        $("#frmLogin").validate({
+            rules: {
+                UserName: {
+                    required: true,
+                    maxlength: 30
+                },
+                Password: {
+                    required: true,
+                    maxlength: 30
+                }
+            },
+            messages: {
+                UserName: {
+                    required: "@LangResource.FieldRequired",
+                    maxlength: "@LangResource.OutOfLength"
+                },
+                Password: {
+                    required: "@LangResource.FieldRequired",
+                    maxlength: "@LangResource.OutOfLength"
+                }
+            }
+        });
+
+        function SubmitLogin() {
+
+            var $form = $('#frmLogin');
+            if ($form.valid()) {
+
+                $.ajax({
+                    url: '@CommonLib.Web.AppConfig.APIUrlBase/token',
+                    type: "POST",
+                    contentType: "application/x-www-form-urlencoded",
+                    timeout: 60000,
+                    data: {
+                        grant_type:"password",
+                        username: $('#UserName').val(),
+                        password: $('#Password').val()
+                    },
+                    success: function (result) {
+
+                        $.ajax({
+                            url: '@Url.Action("Auth")',
+                            type: "POST",
+                            timeout: 60000,
+                            data: {
+                                userName: $('#UserName').val(),
+                                token: result.access_token,
+                                session: result.token2
+                            },
+                            success: function (result2) {
+                                console.log("result2.status=" + result2.status);
+                                console.log("appCode.Success=" + appCode.Success);
+                                if (result2.status == appCode.Success) {
+                                    location.href = '@Url.Action("Index", "Home")';
+                                }
+                                else if (result2.status == appCode.Success_NeedChangePassword) {
+                                    location.href = '@Url.Action("NeedChangePwd", "Account")';
+                                }
+                                else if (result2.status == appCode.Success_RequireTFA) {
+                                    location.href = '@Url.Action("TFA", "Account")';
+                                }
+                                else {
+                                    $("#summary-message").html("<p style='margin:5px'>" + getLValue(appCode.LoginFail)  + "</p>");
+                                    var opt = {
+                                        modal: true,
+                                        title: 'Message'
+                                    };
+                                    $("#summary-message").dialog(opt).dialog("open");
+                                }
+                            }
+                        });
+                        //get route
+                    },
+                    error: function (xhr, textStatus, errorThrown) {
+
+                        $.unblockUI;
+
+                        var jobj = JSON.parse(xhr.responseText);
+                        var arrErr = jobj.error.split("|");
+                        var arrErrDesc = [];
+
+                        if (jobj.error_description != null)
+                        {
+                            arrErrDesc = jobj.error_description.split("|");
+                        }
+
+
+
+                        var errText = "";
+
+                        for (i = 0; i < arrErr.length; i++) {
+                            errText += getLValue(arrErr[i]) + "<br />";
+
+                            if (arrErrDesc.length > 0)
+                            {
+                                errText = errText.replace("{0}", arrErrDesc[0]);
+                            }
+
+
+                            if (arrErr[i] == appCode.InvalidCaptcha) {
+                                RefreshCaptcha();
+                                $('#Captcha').val("");
+                            }
+                        }
+
+
+
+
+                        $("#summary-message").html("<p>" + errText + "</p>");
+                        var opt = {
+                            modal: true,
+                            title: 'Message'
+                        };
+                        $("#summary-message").dialog(opt).dialog("open");
+                    }
+                });
+
+            }
+
+            return false;
+        }
+
+        $('#frmLogin').on('keyup', function (e) {
+            if (e.keyCode == 13) {
+                SubmitLogin();
+            }
+        });
+
+
+        $('#frmLogin').on('click', '#btnSubmit', function (event) {
+            event.preventDefault();
+            SubmitLogin();
+        });
+
+
+
+
+
+
+
+
+
+    }); //end document ready
+
+
+
+</script>
+}
+

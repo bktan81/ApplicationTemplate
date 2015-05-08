@@ -1,0 +1,50 @@
+﻿@if (CommonLib.Web.SessionHelper.IsAuthenticated())
+{
+    using (Html.BeginForm("LogOff", "Account", new { area = "" }, FormMethod.Post, new { id = "logoutForm", @class = "navbar-right" }))
+    {
+        @Html.AntiForgeryToken()
+
+        <ul class="nav navbar-nav navbar-right">
+            <li>
+                @Html.ActionLink("Hello " + CommonLib.Web.SessionHelper.UserName + "!", "Manage", "Account", routeValues: new { area = "" }, htmlAttributes: new { title = "Manage" })
+            </li>
+            <li><a href="javascript:LogOff();">Log off</a></li>
+        </ul>
+    }
+}
+else
+{
+    <ul class="nav navbar-nav navbar-right">
+        <li>@Html.ActionLink("Log in", "Login", "Account", routeValues: new { area = "" }, htmlAttributes: new { id = "loginLink" })</li>
+    </ul>
+}
+
+<script>
+    function LogOff() {
+        var uri = '@CommonLib.Web.AppConfig.APIUrlBase/account/logoff';
+        var model = {
+         
+        };
+
+        $.ajax({
+            url: uri,
+            cache: false,
+            type: "POST",
+            datatype: "json",
+            contentType: 'application/json; charset=utf-8',
+            data: JSON.stringify(model),
+            success: function (result) {
+                if (result.status == appCode.Success) {
+                    location.href = '@Url.Action("Index", "Home")';
+                }
+                else {
+                    var msgContent = getAppCodeText(result.status);
+                    ShowAppMsg($("#mainsummary"), msgContent, true);
+                }
+            },
+            beforeSend: function (request) {
+                request.setRequestHeader("Authorization", "Bearer @CommonLib.Web.SessionHelper.AccessToken");
+            }
+        }); //$Ajax
+    }
+</script>
